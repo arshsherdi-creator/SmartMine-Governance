@@ -1,0 +1,10 @@
+{
+  "name": "SmartMine Governance",
+  "description": "AI-Powered Governance & Compliance Monitoring System for Coal Mines",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
