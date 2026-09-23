@@ -11,9 +11,6 @@ async function startServer() {
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-  // API routes go FIRST
-  app.use('/api', apiRouter);
-
   // Health check
   app.get('/api/health', (req, res) => {
     res.json({
@@ -21,6 +18,29 @@ async function startServer() {
       service: 'SmartMine Governance AI Platform',
       version: '1.0.0',
       timestamp: new Date().toISOString()
+    });
+  });
+
+  // API routes go FIRST
+  app.use('/api', apiRouter);
+
+  // 404 handler for any unhandled /api request (prevents falling through to Vite HTML)
+  app.all('/api/*', (req, res) => {
+    res.status(404).json({
+      success: false,
+      message: `API endpoint not found: ${req.method} ${req.originalUrl}`
+    });
+  });
+  app.all('/api', (req, res) => {
+    res.status(404).json({ success: false, message: 'API root not found' });
+  });
+
+  // Global API error handler (ensures JSON response on errors)
+  app.use('/api', (err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('API Error:', err);
+    res.status(500).json({
+      success: false,
+      message: err?.message || 'Internal Server Error'
     });
   });
 

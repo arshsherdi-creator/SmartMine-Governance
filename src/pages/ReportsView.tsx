@@ -23,6 +23,29 @@ export const ReportsView: React.FC = () => {
     window.print();
   };
 
+  const handleExportCSV = () => {
+    const headers = ['Colliery / Leasehold', 'Subsidiary', 'Type', 'Risk Score (/100)', 'Compliance Rate (%)', 'Statutory Status'];
+    const rows = activeMines.map(m => [
+      `"${m.name}"`,
+      `"${m.subsidiaryName}"`,
+      `"${m.type}"`,
+      m.riskScore,
+      `${m.complianceRate}%`,
+      `"${m.riskLevel === 'Critical' ? 'Section 22 Notice Active' : 'Operational License Normal'}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `smartmine-compliance-report-${selectedMine}-${reportPeriod}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-5">
       {/* Header controls (hidden when printing) */}
@@ -55,6 +78,14 @@ export const ReportsView: React.FC = () => {
           </select>
 
           <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600 transition-colors shadow-xs border border-slate-300 dark:border-slate-600"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export CSV</span>
+          </button>
+
+          <button
             onClick={handlePrint}
             className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded bg-blue-700 hover:bg-blue-800 text-white transition-colors shadow-xs"
           >
@@ -69,13 +100,13 @@ export const ReportsView: React.FC = () => {
         {/* Ministry Header */}
         <div className="border-b-2 border-slate-900 pb-4 text-center space-y-1">
           <div className="text-xs font-bold uppercase tracking-widest text-slate-600">
-            Government of India • Ministry of Coal
+            SmartMine Governance • Hackathon Prototype — Problem Statement 26024
           </div>
           <div className="text-xl font-extrabold uppercase tracking-tight">
             Coal India Limited (CIL) & Directorate General of Mines Safety
           </div>
           <div className="text-sm font-semibold text-blue-900">
-            SMARTMINE AUTOMATED STATUTORY GOVERNANCE DOSSIER
+            AUTOMATED STATUTORY GOVERNANCE DOSSIER (DEMONSTRATION PLATFORM)
           </div>
           <div className="text-[11px] text-slate-500 pt-1 flex justify-between">
             <span>Report Run Date: {new Date().toLocaleDateString('en-IN', { dateStyle: 'long' })}</span>

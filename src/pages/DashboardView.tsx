@@ -17,7 +17,19 @@ import {
   ChevronRight,
   Info,
   Calendar,
-  X
+  X,
+  Shield,
+  History,
+  Settings,
+  Users,
+  Smartphone,
+  FileText,
+  FileSpreadsheet,
+  CheckCircle2,
+  Pickaxe,
+  Leaf,
+  Cpu,
+  AlertOctagon
 } from 'lucide-react';
 
 export const DashboardView: React.FC = () => {
@@ -27,6 +39,10 @@ export const DashboardView: React.FC = () => {
     alerts,
     inspections,
     correctiveActions,
+    currentUser,
+    auditLogs,
+    environmental,
+    contractors,
     setActiveTab,
     setSelectedMineId,
     selectedMineId,
@@ -48,158 +64,556 @@ export const DashboardView: React.FC = () => {
 
   const highRiskMinesList = mines.filter(m => m.riskLevel === 'Critical' || m.riskLevel === 'High');
 
+  // Role-specific descriptions
+  const getRoleDashboardDescription = () => {
+    switch (currentUser.role) {
+      case 'admin':
+        return 'System health, immutable audit trails, and role-based access management across SmartMine Governance';
+      case 'mine_official':
+        return `Operational monitoring, compliance tracking, and pithead risk oversight for ${currentUser.mineName || 'Assigned Mine Lease'}`;
+      case 'inspector':
+        return 'Statutory field inspection oversight, DGMS Section 22 notices, and CAPA verification registry';
+      case 'corporate':
+        return 'Multi-subsidiary governance, aggregate production performance, and high-level enterprise risk metrics';
+      case 'regulatory':
+        return 'Statutory compliance audits, environmental exceedances, and mandatory regulatory enforcement records';
+      case 'contractor':
+        return 'Contractor fleet compliance, heavy machinery safety audits, and assigned corrective actions';
+      default:
+        return 'Real-time multi-tier statutory oversight across operational coal mining leases';
+    }
+  };
+
+  // Render role-specific 4 KPI cards
+  const renderRoleKpis = () => {
+    switch (currentUser.role) {
+      case 'admin':
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">System Health</span>
+                <div className="w-8 h-8 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+                  <Cpu className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">100%</span>
+                <span className="text-xs text-emerald-600 font-semibold">Services Online</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                Database, telemetry bus & auth proxies active
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Active Roles / Users</span>
+                <div className="w-8 h-8 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center">
+                  <Shield className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-slate-900 dark:text-white">6 Roles</span>
+                <span className="text-xs text-slate-500">24 Provisioned</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                Granular RBAC boundaries enforced
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Audit Trail Entries</span>
+                <div className="w-8 h-8 rounded bg-purple-50 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center">
+                  <History className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-purple-600 dark:text-purple-400">
+                  {auditLogs.length || 28}
+                </span>
+                <span className="text-xs text-emerald-600 font-semibold">Immutable</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                SHA-256 cryptographic verification ready
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Security Incidents</span>
+                <div className="w-8 h-8 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-emerald-600">0 Breaches</span>
+                <span className="text-xs text-slate-500">Last 30 Days</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                Zero unauthorized privilege elevations
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'inspector':
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Assigned Inspections</span>
+                <div className="w-8 h-8 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center">
+                  <SearchCheck className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">
+                  {inspections.length}
+                </span>
+                <span className="text-xs text-slate-500">Scheduled / Completed</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                DGMS statutory compliance inspections
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Overdue Audits</span>
+                <div className="w-8 h-8 rounded bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center">
+                  <Clock className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-rose-600 dark:text-rose-400">
+                  {inspections.filter(i => i.status === 'Overdue' || i.status === 'Scheduled').length || 2}
+                </span>
+                <span className="text-xs text-rose-600 font-semibold">Priority Follow-up</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                Eastern Valley pithead audit pending
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Open Violations</span>
+                <div className="w-8 h-8 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-amber-600 dark:text-amber-400">
+                  {metrics.openViolations}
+                </span>
+                <span className="text-xs text-slate-500">Citations</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                1 Section 22(3) prohibitive notice active
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">CAPA Verification</span>
+                <div className="w-8 h-8 rounded bg-purple-50 dark:bg-purple-950/40 text-purple-600 flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-purple-600 dark:text-purple-400">
+                  {correctiveActions.filter(ca => ca.status === 'In Progress' || ca.status === 'Under Review').length}
+                </span>
+                <span className="text-xs text-slate-500">Awaiting Signoff</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                Field verification visits required
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'contractor':
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Contractor Compliance</span>
+                <div className="w-8 h-8 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-emerald-600">92.4%</span>
+                <span className="text-xs text-emerald-600 font-semibold">Tier 1 Rating</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                Statutory wage & safety adherence certified
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Assigned Contracts</span>
+                <div className="w-8 h-8 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center">
+                  <Users className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                  {contractors.length || 6}
+                </span>
+                <span className="text-xs text-slate-500">Active Work Orders</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                Overburden removal & heavy transport
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Expiring Permits / Docs</span>
+                <div className="w-8 h-8 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center">
+                  <Clock className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-amber-600">1</span>
+                <span className="text-xs text-amber-600 font-semibold">14 Days Left</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                HEMM Fitness Certificate due for renewal
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Assigned CAPA</span>
+                <div className="w-8 h-8 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center">
+                  <AlertOctagon className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-blue-600">2 Actions</span>
+                <span className="text-xs text-emerald-600 font-semibold">In Progress</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                Dust suppression water bowser deployment
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'regulatory':
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Statutory Compliance</span>
+                <div className="w-8 h-8 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                  {metrics.complianceRate}%
+                </span>
+                <span className="text-xs text-amber-600 font-semibold">Threshold: 90%</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                Statutory acts, MMR 1961 & CPCB guidelines
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Overdue Statutory Items</span>
+                <div className="w-8 h-8 rounded bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center">
+                  <Clock className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-rose-600">
+                  {metrics.overdueComplianceItems}
+                </span>
+                <span className="text-xs text-rose-600 font-semibold">Citations Pending</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                Immediate regulatory notices issued
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Environmental Exceedances</span>
+                <div className="w-8 h-8 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center">
+                  <Leaf className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-amber-600">
+                  {environmental.filter(e => e.status === 'Critical' || e.status === 'Warning').length || 4}
+                </span>
+                <span className="text-xs text-amber-600 font-semibold">PM10 / Effluent</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                CPCB regional air quality standards
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Prohibitive Orders</span>
+                <div className="w-8 h-8 rounded bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center">
+                  <ShieldAlert className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-rose-600">1 Active</span>
+                <span className="text-xs text-rose-600 font-semibold">DGMS Sec 22(3)</span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                Eastern Valley Open Cast Pit 4 ceased
+              </p>
+            </div>
+          </div>
+        );
+
+      case 'corporate':
+      case 'mine_official':
+      default:
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Compliance Rate */}
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Overall Compliance</span>
+                <div className="w-8 h-8 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
+                  {metrics.complianceRate}%
+                </span>
+                <span className="text-xs text-emerald-600 font-semibold flex items-center">
+                  Target: 95.0%
+                </span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${
+                    metrics.complianceRate >= 80 ? 'bg-emerald-500' : 'bg-amber-500'
+                  }`}
+                  style={{ width: `${metrics.complianceRate}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                {metrics.complianceDistribution.compliant} of {mines.length * 6} statutory parameters compliant
+              </p>
+            </div>
+
+            {/* High Risk Mines */}
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">High / Critical Leases</span>
+                <div className="w-8 h-8 rounded bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center">
+                  <ShieldAlert className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-rose-600 dark:text-rose-400">
+                  {metrics.highRiskMines}
+                </span>
+                <span className="text-xs text-slate-500">of {metrics.totalMines} leases</span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-3">
+                <span className="text-[11px] font-semibold text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900">
+                  1 Critical (Eastern Valley)
+                </span>
+                <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-900">
+                  1 High (Alpha)
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                Section 22(3) prohibitive notice active
+              </p>
+            </div>
+
+            {/* Open Violations */}
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Open Violations</span>
+                <div className="w-8 h-8 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-amber-600 dark:text-amber-400">
+                  {metrics.openViolations}
+                </span>
+                <span className="text-xs text-slate-500">regulatory citations</span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
+                <div className="bg-amber-500 h-full rounded-full" style={{ width: '65%' }} />
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                10 DGMS Safety, 4 Environmental, 3 Operational
+              </p>
+            </div>
+
+            {/* Pending Corrective Actions (CAPA) */}
+            <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
+              <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <span className="font-semibold uppercase tracking-wider text-[11px]">Pending CAPA Actions</span>
+                <div className="w-8 h-8 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center">
+                  <Clock className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">
+                  {metrics.pendingCorrectiveActions}
+                </span>
+                <span className="text-xs text-rose-600 font-semibold">
+                  ({metrics.overdueComplianceItems} overdue)
+                </span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
+                <div className="bg-blue-500 h-full rounded-full" style={{ width: '45%' }} />
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+                3 escalated to Corporate Safety Directorate
+              </p>
+            </div>
+          </div>
+        );
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Top Banner: Status and Quick Filter */}
+      {/* Top Banner: Status and Role-Specific Identification */}
       <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               Live Telemetry & Compliance Active
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              DGMS & Coal India Central Repository
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/80 dark:text-blue-300 border border-blue-200 dark:border-blue-900">
+              Role: {currentUser.roleTitle}
             </span>
           </div>
-          <h1 className="text-xl font-extrabold text-slate-900 dark:text-white mt-1.5 tracking-tight">
-            Executive Governance & Compliance Dashboard
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white mt-1 tracking-tight">
+            Welcome, {currentUser.name}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Real-time multi-tier statutory oversight across 6 operational coal mining leases
+            {getRoleDashboardDescription()}
           </p>
         </div>
 
-        {/* Quick actions for judges & operators */}
+        {/* Quick actions tailored to the role */}
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => setActiveTab('ai-assistant')}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-blue-700 hover:bg-blue-800 text-white transition-colors shadow-xs"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Ask SmartMine AI</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('compliance')}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors"
-          >
-            <FileCheck className="w-3.5 h-3.5 text-blue-600" />
-            <span>Inspect Overdue ({metrics.overdueComplianceItems})</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('gis-map')}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors"
-          >
-            <Activity className="w-3.5 h-3.5 text-amber-600" />
-            <span>GIS Mine Risk Map</span>
-          </button>
+          {currentUser.role === 'admin' ? (
+            <>
+              <button
+                onClick={() => setActiveTab('users-roles')}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-blue-700 hover:bg-blue-800 text-white transition-colors shadow-xs"
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>Users & Roles (RBAC)</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('audit-trail')}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors"
+              >
+                <History className="w-3.5 h-3.5 text-blue-600" />
+                <span>Audit Trail ({auditLogs.length})</span>
+              </button>
+            </>
+          ) : currentUser.role === 'inspector' ? (
+            <>
+              <button
+                onClick={() => setActiveTab('inspections')}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-blue-700 hover:bg-blue-800 text-white transition-colors shadow-xs"
+              >
+                <SearchCheck className="w-3.5 h-3.5" />
+                <span>Field Inspections</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('field-reports')}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors"
+              >
+                <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Field Reports</span>
+              </button>
+            </>
+          ) : currentUser.role === 'contractor' ? (
+            <>
+              <button
+                onClick={() => setActiveTab('contractors')}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-blue-700 hover:bg-blue-800 text-white transition-colors shadow-xs"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>My Contracts & Fleet</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('documents')}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors"
+              >
+                <FileText className="w-3.5 h-3.5 text-blue-600" />
+                <span>Upload Documents</span>
+              </button>
+            </>
+          ) : currentUser.role === 'regulatory' ? (
+            <>
+              <button
+                onClick={() => setActiveTab('compliance')}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-blue-700 hover:bg-blue-800 text-white transition-colors shadow-xs"
+              >
+                <FileCheck className="w-3.5 h-3.5" />
+                <span>Statutory Compliance</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('reports')}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-blue-600" />
+                <span>Regulatory Reports</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => setActiveTab('ai-assistant')}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-blue-700 hover:bg-blue-800 text-white transition-colors shadow-xs"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Ask SmartMine AI</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('compliance')}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors"
+              >
+                <FileCheck className="w-3.5 h-3.5 text-blue-600" />
+                <span>Inspect Overdue ({metrics.overdueComplianceItems})</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('gis-map')}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-600 transition-colors"
+              >
+                <Activity className="w-3.5 h-3.5 text-amber-600" />
+                <span>GIS Mine Risk Map</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* KPI Cards Grid (Step 2 in Demo) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Compliance Rate */}
-        <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span className="font-semibold uppercase tracking-wider text-[11px]">Overall Compliance</span>
-            <div className="w-8 h-8 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-slate-900 dark:text-white">
-              {metrics.complianceRate}%
-            </span>
-            <span className="text-xs text-emerald-600 font-semibold flex items-center">
-              Target: 95.0%
-            </span>
-          </div>
-          <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
-            <div
-              className={`h-full rounded-full ${
-                metrics.complianceRate >= 80 ? 'bg-emerald-500' : 'bg-amber-500'
-              }`}
-              style={{ width: `${metrics.complianceRate}%` }}
-            />
-          </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-            {metrics.complianceDistribution.compliant} of {mines.length * 6} evaluated statutory parameters compliant
-          </p>
-        </div>
-
-        {/* High Risk Mines */}
-        <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span className="font-semibold uppercase tracking-wider text-[11px]">High / Critical Risk Mines</span>
-            <div className="w-8 h-8 rounded bg-rose-50 dark:bg-rose-950/40 text-rose-600 flex items-center justify-center">
-              <ShieldAlert className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-rose-600 dark:text-rose-400">
-              {metrics.highRiskMines}
-            </span>
-            <span className="text-xs text-slate-500">of {metrics.totalMines} leases</span>
-          </div>
-          <div className="flex items-center gap-1.5 mt-3">
-            <span className="text-[11px] font-semibold text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900">
-              1 Critical (Eastern Valley)
-            </span>
-            <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-900">
-              1 High (Alpha)
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-            Section 22(3) prohibitive notice active
-          </p>
-        </div>
-
-        {/* Open Violations */}
-        <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span className="font-semibold uppercase tracking-wider text-[11px]">Open Violations</span>
-            <div className="w-8 h-8 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center">
-              <AlertTriangle className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-amber-600 dark:text-amber-400">
-              {metrics.openViolations}
-            </span>
-            <span className="text-xs text-slate-500">regulatory citations</span>
-          </div>
-          <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
-            <div className="bg-amber-500 h-full rounded-full" style={{ width: '65%' }} />
-          </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-            10 DGMS Safety, 4 Environmental, 3 Operational
-          </p>
-        </div>
-
-        {/* Pending Corrective Actions (CAPA) */}
-        <div className="bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-lg p-4 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span className="font-semibold uppercase tracking-wider text-[11px]">Pending CAPA Actions</span>
-            <div className="w-8 h-8 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center">
-              <Clock className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">
-              {metrics.pendingCorrectiveActions}
-            </span>
-            <span className="text-xs text-rose-600 font-semibold">
-              ({metrics.overdueComplianceItems} overdue)
-            </span>
-          </div>
-          <div className="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full mt-3 overflow-hidden">
-            <div className="bg-blue-500 h-full rounded-full" style={{ width: '45%' }} />
-          </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-            3 escalated to Corporate Safety Directorate
-          </p>
-        </div>
-      </div>
+      {/* KPI Cards Grid tailored to current role */}
+      {renderRoleKpis()}
 
       {/* Main Grid: Mine Rankings & Visual Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

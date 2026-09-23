@@ -42,88 +42,174 @@ interface NavGroup {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
-  const { activeTab, setActiveTab, compliance, alerts, correctiveActions } = useApp();
+  const { activeTab, setActiveTab, compliance, alerts, correctiveActions, currentUser } = useApp();
   const navRef = React.useRef<HTMLElement>(null);
 
   const overdueCount = compliance.filter(c => c.status === 'Overdue').length;
   const criticalAlertsCount = alerts.filter(a => a.priority === 'Critical' && a.status === 'Active').length;
   const pendingActionsCount = correctiveActions.filter(ca => !['Resolved', 'Closed'].includes(ca.status)).length;
 
-  const NAV_GROUPS: NavGroup[] = [
-    {
-      groupTitle: 'OVERVIEW',
-      items: [
-        { id: 'dashboard', label: 'Governance Dashboard', icon: LayoutDashboard }
-      ]
-    },
-    {
-      groupTitle: 'OPERATIONS',
-      items: [
-        { id: 'production', label: 'Production & Operations', icon: Pickaxe },
-        { id: 'field-reports', label: 'Field Reporting (Mobile)', icon: Smartphone }
-      ]
-    },
-    {
-      groupTitle: 'GOVERNANCE',
-      items: [
-        {
-          id: 'compliance',
-          label: 'Statutory Compliance',
-          icon: FileCheck,
-          badge: overdueCount > 0 ? `${overdueCount} Overdue` : undefined,
-          badgeColor: 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-400'
-        },
-        { id: 'inspections', label: 'Inspections & Audits', icon: SearchCheck },
-        {
-          id: 'corrective-actions',
-          label: 'Corrective Actions (CAPA)',
-          icon: AlertOctagon,
-          badge: pendingActionsCount > 0 ? pendingActionsCount : undefined,
-          badgeColor: 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-400'
-        },
-        { id: 'safety', label: 'Safety & Incidents', icon: AlertOctagon },
-        { id: 'environmental', label: 'Environmental Monitoring', icon: Leaf },
-        { id: 'contractors', label: 'Contractor Management', icon: Users },
-        { id: 'grievances', label: 'Grievance Redressal', icon: MessageSquareWarning },
-        {
-          id: 'alerts',
-          label: 'Alerts & Escalations',
-          icon: Radio,
-          badge: criticalAlertsCount > 0 ? criticalAlertsCount : undefined,
-          badgeColor: 'bg-rose-600 text-white'
-        }
-      ]
-    },
-    {
-      groupTitle: 'INTELLIGENCE',
-      items: [
-        { id: 'ai-risk', label: 'AI Risk Center', icon: Sparkles },
-        { id: 'ai-assistant', label: 'SmartMine AI Assistant', icon: Sparkles },
-        { id: 'anomalies', label: 'Anomaly Detection', icon: TrendingDown },
-        { id: 'gis-map', label: 'GIS Mine Map', icon: Map }
-      ]
-    },
-    {
-      groupTitle: 'DOCUMENTS & OCR',
-      items: [
-        { id: 'documents', label: 'Document Center & OCR', icon: FileText }
-      ]
-    },
-    {
-      groupTitle: 'REPORTS & REGULATORY',
-      items: [
-        { id: 'reports', label: 'Statutory & CIL Reports', icon: FileSpreadsheet }
-      ]
-    },
-    {
-      groupTitle: 'ADMINISTRATION',
-      items: [
-        { id: 'users-roles', label: 'Users & Roles (RBAC)', icon: Shield },
-        { id: 'audit-trail', label: 'Immutable Audit Trail', icon: History },
-        { id: 'system-settings', label: 'System & Demo Reset', icon: Settings }
-      ]
+  const getNavGroupsForRole = (): NavGroup[] => {
+    switch (currentUser.role) {
+      case 'admin':
+        return [
+          {
+            groupTitle: 'ADMINISTRATION & SYSTEM',
+            items: [
+              { id: 'dashboard', label: 'Admin Dashboard', icon: LayoutDashboard },
+              { id: 'users-roles', label: 'Users & Roles (RBAC)', icon: Shield },
+              { id: 'audit-trail', label: 'Immutable Audit Trail', icon: History },
+              { id: 'system-settings', label: 'System Settings & Reset', icon: Settings }
+            ]
+          }
+        ];
+
+      case 'mine_official':
+        return [
+          {
+            groupTitle: 'OPERATIONAL OVERVIEW',
+            items: [
+              { id: 'dashboard', label: 'Mine GM Dashboard', icon: LayoutDashboard }
+            ]
+          },
+          {
+            groupTitle: 'OPERATIONS',
+            items: [
+              { id: 'production', label: 'Operations & Production', icon: Pickaxe },
+              { id: 'field-reports', label: 'Field Reporting (Mobile)', icon: Smartphone }
+            ]
+          },
+          {
+            groupTitle: 'STATUTORY & SAFETY',
+            items: [
+              {
+                id: 'compliance',
+                label: 'Mine Compliance',
+                icon: FileCheck,
+                badge: overdueCount > 0 ? `${overdueCount} Overdue` : undefined,
+                badgeColor: 'bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-400'
+              },
+              { id: 'inspections', label: 'Mine Inspections', icon: SearchCheck },
+              {
+                id: 'corrective-actions',
+                label: 'Corrective Actions (CAPA)',
+                icon: AlertOctagon,
+                badge: pendingActionsCount > 0 ? pendingActionsCount : undefined,
+                badgeColor: 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-400'
+              },
+              { id: 'safety', label: 'Safety & Incidents', icon: AlertOctagon },
+              { id: 'environmental', label: 'Environmental Monitoring', icon: Leaf },
+              { id: 'contractors', label: 'Contractor Management', icon: Users },
+              { id: 'grievances', label: 'Grievance Redressal', icon: MessageSquareWarning },
+              {
+                id: 'alerts',
+                label: 'Alerts & Escalations',
+                icon: Radio,
+                badge: criticalAlertsCount > 0 ? criticalAlertsCount : undefined,
+                badgeColor: 'bg-rose-600 text-white'
+              }
+            ]
+          },
+          {
+            groupTitle: 'INTELLIGENCE & REPORTS',
+            items: [
+              { id: 'gis-map', label: 'GIS Mine Map', icon: Map },
+              { id: 'reports', label: 'Statutory Reports', icon: FileSpreadsheet },
+              { id: 'ai-assistant', label: 'SmartMine AI Assistant', icon: Sparkles }
+            ]
+          }
+        ];
+
+      case 'inspector':
+        return [
+          {
+            groupTitle: 'INSPECTION OVERSIGHT',
+            items: [
+              { id: 'dashboard', label: 'Inspector Dashboard', icon: LayoutDashboard },
+              { id: 'inspections', label: 'My Inspections & Audits', icon: SearchCheck },
+              { id: 'field-reports', label: 'Field Observations & Reports', icon: Smartphone },
+              { id: 'safety', label: 'Safety Violations & Section 22', icon: AlertOctagon },
+              {
+                id: 'corrective-actions',
+                label: 'Corrective Actions (CAPA)',
+                icon: AlertOctagon,
+                badge: pendingActionsCount > 0 ? pendingActionsCount : undefined,
+                badgeColor: 'bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-400'
+              },
+              { id: 'gis-map', label: 'GIS Field / Mine Grid', icon: Map },
+              { id: 'documents', label: 'Statutory Orders & OCR', icon: FileText },
+              { id: 'ai-assistant', label: 'SmartMine AI Assistant', icon: Sparkles }
+            ]
+          }
+        ];
+
+      case 'corporate':
+        return [
+          {
+            groupTitle: 'CORPORATE OVERVIEW',
+            items: [
+              { id: 'dashboard', label: 'Executive Dashboard', icon: LayoutDashboard },
+              { id: 'reports', label: 'Enterprise Overview & Reports', icon: FileSpreadsheet },
+              { id: 'compliance', label: 'Mine Performance & Compliance', icon: FileCheck },
+              { id: 'ai-risk', label: 'Risk Intelligence (AI Center)', icon: Sparkles },
+              { id: 'anomalies', label: 'Operational Anomalies', icon: TrendingDown },
+              { id: 'safety', label: 'Safety Oversight', icon: AlertOctagon },
+              { id: 'environmental', label: 'Environmental Benchmarking', icon: Leaf },
+              { id: 'production', label: 'Production Monitoring', icon: Pickaxe },
+              { id: 'gis-map', label: 'GIS Coalfield Map', icon: Map },
+              { id: 'ai-assistant', label: 'SmartMine AI Assistant', icon: Sparkles }
+            ]
+          }
+        ];
+
+      case 'regulatory':
+        return [
+          {
+            groupTitle: 'REGULATORY COMPLIANCE',
+            items: [
+              { id: 'dashboard', label: 'Regulatory Dashboard', icon: LayoutDashboard },
+              { id: 'compliance', label: 'Statutory Compliance (DGMS/CPCB)', icon: FileCheck },
+              { id: 'inspections', label: 'Inspections & Clearances', icon: SearchCheck },
+              { id: 'safety', label: 'Safety Compliance & Directives', icon: AlertOctagon },
+              { id: 'environmental', label: 'Environmental Compliance', icon: Leaf },
+              { id: 'alerts', label: 'Violations & Escalations', icon: Radio },
+              { id: 'corrective-actions', label: 'Enforcement CAPA Tracking', icon: AlertOctagon },
+              { id: 'reports', label: 'Regulatory Reports', icon: FileSpreadsheet },
+              { id: 'documents', label: 'Statutory Documents & Clearances', icon: FileText },
+              { id: 'gis-map', label: 'GIS Mine Overview', icon: Map }
+            ]
+          }
+        ];
+
+      case 'contractor':
+        return [
+          {
+            groupTitle: 'CONTRACTOR PORTAL',
+            items: [
+              { id: 'dashboard', label: 'Contractor Dashboard', icon: LayoutDashboard },
+              { id: 'contractors', label: 'My Contracts & Machinery', icon: Users },
+              { id: 'inspections', label: 'Machinery Safety Audits', icon: SearchCheck },
+              { id: 'safety', label: 'Safety Requirements & PPE', icon: AlertOctagon },
+              { id: 'corrective-actions', label: 'Assigned Corrective Actions', icon: AlertOctagon },
+              { id: 'documents', label: 'Required Vendor Documents', icon: FileText },
+              { id: 'alerts', label: 'Compliance Alerts & Notices', icon: Radio }
+            ]
+          }
+        ];
+
+      default:
+        return [
+          {
+            groupTitle: 'OVERVIEW',
+            items: [
+              { id: 'dashboard', label: 'Governance Dashboard', icon: LayoutDashboard }
+            ]
+          }
+        ];
     }
-  ];
+  };
+
+  const navGroups = getNavGroupsForRole();
 
   return (
     <>
@@ -164,7 +250,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           ref={navRef}
           className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-3 py-4 space-y-5 select-none scrollbar-thin"
         >
-          {NAV_GROUPS.map((group, gIdx) => (
+          {navGroups.map((group, gIdx) => (
             <div key={gIdx} className="space-y-1">
               <div className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
                 {group.groupTitle}
@@ -208,14 +294,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           ))}
         </nav>
 
-        {/* Footer PSU info & disclaimer */}
-        <div className="p-3 border-t border-slate-800 bg-slate-950/60 text-[10px] text-slate-400 space-y-1 shrink-0">
+        {/* Footer PSU info & active role */}
+        <div className="p-3 border-t border-slate-800 bg-slate-950/70 text-[10px] text-slate-400 space-y-1.5 shrink-0">
           <div className="flex items-center justify-between text-slate-300 font-semibold">
-            <span>COAL INDIA / DGMS</span>
-            <span className="text-emerald-400">OPERATIONAL</span>
+            <span className="truncate">{currentUser.roleTitle}</span>
+            <span className="text-emerald-400 font-mono text-[9px] uppercase px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-800 shrink-0 ml-1">
+              {currentUser.role}
+            </span>
           </div>
-          <div className="text-[9px] text-slate-400 leading-tight">
-            Smart Automation Hackathon Platform
+          <div className="text-[9px] text-slate-400 truncate leading-tight">
+            {currentUser.name} • {currentUser.department.split('/')[0]}
           </div>
         </div>
       </aside>

@@ -28,17 +28,38 @@ import { AuditTrailView } from './pages/AuditTrailView';
 import { UsersRolesView } from './pages/UsersRolesView';
 import { SystemSettingsView } from './pages/SystemSettingsView';
 import { LoginView } from './pages/LoginView';
+import { AccessRestricted } from './components/AccessRestricted';
+import { ROLE_ALLOWED_TABS } from './types';
 
 const MainLayout: React.FC = () => {
-  const { activeTab } = useApp();
-  const [showLogin, setShowLogin] = useState(false);
+  const { activeTab, setActiveTab, isLoggedIn, currentUser, logout } = useApp();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  if (showLogin) {
-    return <LoginView onLoginSuccess={() => setShowLogin(false)} />;
+  if (!isLoggedIn) {
+    return (
+      <div
+        id="login-page-container"
+        className="min-h-screen h-screen h-[100dvh] w-full overflow-y-auto overscroll-y-contain bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
+      >
+        <LoginView />
+        <ToastContainer />
+      </div>
+    );
   }
 
+  const allowedTabs = ROLE_ALLOWED_TABS[currentUser.role] || ['dashboard'];
+  const isTabAllowed = allowedTabs.includes(activeTab);
+
   const renderActiveView = () => {
+    if (!isTabAllowed) {
+      return (
+        <AccessRestricted
+          attemptedTab={activeTab}
+          onGoDashboard={() => setActiveTab('dashboard')}
+        />
+      );
+    }
+
     switch (activeTab) {
       case 'dashboard':
         return <DashboardView />;
@@ -93,7 +114,7 @@ const MainLayout: React.FC = () => {
     <div className="h-screen h-[100dvh] bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200 overflow-hidden">
       <Header
         onToggleSidebar={() => setSidebarOpen(prev => !prev)}
-        onOpenLogin={() => setShowLogin(true)}
+        onOpenLogin={() => logout()}
       />
 
       <div className="flex flex-1 min-h-0 overflow-hidden relative">

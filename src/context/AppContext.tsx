@@ -16,8 +16,43 @@ import {
   AuditLogItem,
   GrievanceItem,
   DocumentItem,
-  FieldReport
+  FieldReport,
+  DEMO_ACCOUNTS,
+  ROLE_ALLOWED_TABS
 } from '../types';
+import {
+  INITIAL_METRICS,
+  SEED_MINES,
+  SEED_COMPLIANCE_REQUIREMENTS,
+  SEED_INSPECTIONS,
+  SEED_CORRECTIVE_ACTIONS,
+  SEED_SAFETY_INCIDENTS,
+  SEED_ENVIRONMENTAL_READINGS,
+  SEED_PRODUCTION_REPORTS,
+  SEED_CONTRACTORS,
+  SEED_ALERTS,
+  SEED_NOTIFICATIONS,
+  SEED_GRIEVANCES,
+  SEED_DOCUMENTS,
+  SEED_FIELD_REPORTS,
+  SEED_AUDIT_LOGS
+} from '../data/initialData';
+
+// Helper to safely fetch JSON without throwing when non-JSON (like HTML) is returned
+async function safeFetchJson<T = any>(url: string, options?: RequestInit): Promise<{ success: boolean; data?: T; message?: string }> {
+  try {
+    const res = await fetch(url, options);
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      // Returned HTML or other non-JSON response (e.g. 502/404)
+      return { success: false, message: `Non-JSON response (${res.status} ${contentType})` };
+    }
+    const json = await res.json();
+    return json;
+  } catch (err: any) {
+    return { success: false, message: err?.message || 'Network request failed' };
+  }
+}
 
 export interface ToastMessage {
   id: string;
@@ -176,9 +211,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setIsDarkMode(prev => !prev);
   };
 
-  // Auth state
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
-  const [currentUser, setCurrentUser] = useState<UserProfile>(DEFAULT_USER);
+  // Auth state initialized from localStorage for persistent session
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    return localStorage.getItem('smartmine_auth_session') !== null;
+  });
+
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem('smartmine_auth_session');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.role) return parsed;
+      } catch (e) {
+        // fallback
+      }
+    }
+    const adminDemo = DEMO_ACCOUNTS.find(a => a.role === 'admin') || DEMO_ACCOUNTS[0];
+    return {
+      id: adminDemo.id,
+      name: adminDemo.name,
+      email: adminDemo.demoEmail,
+      role: adminDemo.role,
+      roleTitle: adminDemo.roleTitle,
+      department: adminDemo.department,
+      avatarUrl: DEFAULT_USER.avatarUrl
+    };
+  });
 
   // Navigation state
   const [activeTab, setActiveTab] = useState<string>('dashboard');
@@ -186,23 +244,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isGuideOpen, setIsGuideOpen] = useState<boolean>(false);
 
-  // Data states
-  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
-  const [mines, setMines] = useState<Mine[]>([]);
-  const [compliance, setCompliance] = useState<ComplianceRequirement[]>([]);
-  const [inspections, setInspections] = useState<Inspection[]>([]);
-  const [correctiveActions, setCorrectiveActions] = useState<CorrectiveAction[]>([]);
-  const [incidents, setIncidents] = useState<SafetyIncident[]>([]);
-  const [environmental, setEnvironmental] = useState<EnvironmentalReading[]>([]);
-  const [production, setProduction] = useState<ProductionReport[]>([]);
-  const [contractors, setContractors] = useState<Contractor[]>([]);
-  const [alerts, setAlerts] = useState<AlertItem[]>([]);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [grievances, setGrievances] = useState<GrievanceItem[]>([]);
-  const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [fieldReports, setFieldReports] = useState<FieldReport[]>([]);
-  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  // Data states initialized with seed baseline data for instantaneous hydration
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(INITIAL_METRICS);
+  const [mines, setMines] = useState<Mine[]>(SEED_MINES);
+  const [compliance, setCompliance] = useState<ComplianceRequirement[]>(SEED_COMPLIANCE_REQUIREMENTS);
+  const [inspections, setInspections] = useState<Inspection[]>(SEED_INSPECTIONS);
+  const [correctiveActions, setCorrectiveActions] = useState<CorrectiveAction[]>(SEED_CORRECTIVE_ACTIONS);
+  const [incidents, setIncidents] = useState<SafetyIncident[]>(SEED_SAFETY_INCIDENTS);
+  const [environmental, setEnvironmental] = useState<EnvironmentalReading[]>(SEED_ENVIRONMENTAL_READINGS);
+  const [production, setProduction] = useState<ProductionReport[]>(SEED_PRODUCTION_REPORTS);
+  const [contractors, setContractors] = useState<Contractor[]>(SEED_CONTRACTORS);
+  const [alerts, setAlerts] = useState<AlertItem[]>(SEED_ALERTS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(SEED_NOTIFICATIONS);
+  const [grievances, setGrievances] = useState<GrievanceItem[]>(SEED_GRIEVANCES);
+  const [documents, setDocuments] = useState<DocumentItem[]>(SEED_DOCUMENTS);
+  const [fieldReports, setFieldReports] = useState<FieldReport[]>(SEED_FIELD_REPORTS);
+  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>(SEED_AUDIT_LOGS);
+  const [loading, setLoading] = useState<boolean>(false);
 
   // Toast notifications
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
@@ -220,32 +278,73 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const setCurrentRole = (role: UserRole) => {
+    const demo = DEMO_ACCOUNTS.find(a => a.role === role);
     const preset = ROLE_PRESETS[role];
     const updated: UserProfile = {
       ...currentUser,
-      ...preset,
+      id: demo?.id || preset.id || `usr_${role}_01`,
+      name: demo?.name || preset.name || 'Statutory Official',
+      email: demo?.demoEmail || preset.email || `${role}@smartmine.demo`,
+      roleTitle: demo?.roleTitle || preset.roleTitle || role.toUpperCase(),
+      department: demo?.department || preset.department || 'Statutory Authority',
+      mineId: demo?.mineId || preset.mineId,
+      mineName: demo?.mineName || preset.mineName,
       role
     };
     setCurrentUser(updated);
-    showToast('info', 'Role Switched', `Switched active perspective to ${updated.roleTitle} (${role.toUpperCase()})`);
+    if (isLoggedIn) {
+      localStorage.setItem('smartmine_auth_session', JSON.stringify(updated));
+    }
+
+    // Role-based route guard check: if current tab is not allowed, route to dashboard
+    const allowed = ROLE_ALLOWED_TABS[role] || ['dashboard'];
+    if (!allowed.includes(activeTab)) {
+      setActiveTab('dashboard');
+    }
+
+    showToast('info', 'Role Switched', `Active perspective: ${updated.roleTitle} (${role.toUpperCase()})`);
   };
 
   const login = (email: string, role?: UserRole) => {
+    const targetRole = role || 'mine_official';
+    const demo = DEMO_ACCOUNTS.find(a => a.role === targetRole);
+    const preset = ROLE_PRESETS[targetRole];
+    const userProfile: UserProfile = {
+      id: demo?.id || preset.id || `usr_${targetRole}_01`,
+      name: demo?.name || preset.name || 'Statutory Official',
+      email: demo?.demoEmail || email,
+      role: targetRole,
+      roleTitle: demo?.roleTitle || preset.roleTitle || targetRole.toUpperCase(),
+      department: demo?.department || preset.department || 'Statutory Authority',
+      mineId: demo?.mineId || preset.mineId,
+      mineName: demo?.mineName || preset.mineName,
+      avatarUrl: DEFAULT_USER.avatarUrl
+    };
+
+    setCurrentUser(userProfile);
     setIsLoggedIn(true);
-    if (role && ROLE_PRESETS[role]) {
-      setCurrentRole(role);
-    }
-    showToast('success', 'Logged In', `Authenticated as ${currentUser.name}`);
+    localStorage.setItem('smartmine_auth_session', JSON.stringify(userProfile));
+    setActiveTab('dashboard');
   };
 
   const logout = () => {
+    localStorage.removeItem('smartmine_auth_session');
     setIsLoggedIn(false);
+    setActiveTab('dashboard');
     showToast('info', 'Signed Out', 'Signed out of SmartMine Governance session.');
   };
 
   const refreshData = async () => {
     try {
       setLoading(true);
+      const headers = {
+        'Content-Type': 'application/json',
+        'x-user-role': currentUser.role,
+        'x-user-id': currentUser.id,
+        'x-user-mine-id': currentUser.mineId || '',
+        'authorization': `Bearer demo_token_${currentUser.id}`
+      };
+
       const [
         dashRes,
         minesRes,
@@ -263,41 +362,40 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         fldRes,
         audRes
       ] = await Promise.all([
-        fetch('/api/dashboard').then(r => r.json()),
-        fetch('/api/mines').then(r => r.json()),
-        fetch('/api/compliance').then(r => r.json()),
-        fetch('/api/inspections').then(r => r.json()),
-        fetch('/api/corrective-actions').then(r => r.json()),
-        fetch('/api/incidents').then(r => r.json()),
-        fetch('/api/environmental').then(r => r.json()),
-        fetch('/api/production').then(r => r.json()),
-        fetch('/api/contractors').then(r => r.json()),
-        fetch('/api/alerts').then(r => r.json()),
-        fetch('/api/notifications').then(r => r.json()),
-        fetch('/api/grievances').then(r => r.json()),
-        fetch('/api/documents').then(r => r.json()),
-        fetch('/api/field-reports').then(r => r.json()),
-        fetch('/api/audit-logs').then(r => r.json())
+        safeFetchJson('/api/dashboard', { headers }),
+        safeFetchJson('/api/mines', { headers }),
+        safeFetchJson('/api/compliance', { headers }),
+        safeFetchJson('/api/inspections', { headers }),
+        safeFetchJson('/api/corrective-actions', { headers }),
+        safeFetchJson('/api/incidents', { headers }),
+        safeFetchJson('/api/environmental', { headers }),
+        safeFetchJson('/api/production', { headers }),
+        safeFetchJson('/api/contractors', { headers }),
+        safeFetchJson('/api/alerts', { headers }),
+        safeFetchJson('/api/notifications', { headers }),
+        safeFetchJson('/api/grievances', { headers }),
+        safeFetchJson('/api/documents', { headers }),
+        safeFetchJson('/api/field-reports', { headers }),
+        safeFetchJson('/api/audit-logs', { headers })
       ]);
 
-      if (dashRes.success) setMetrics(dashRes.data);
-      if (minesRes.success) setMines(minesRes.data);
-      if (compRes.success) setCompliance(compRes.data);
-      if (inspRes.success) setInspections(inspRes.data);
-      if (caRes.success) setCorrectiveActions(caRes.data);
-      if (incRes.success) setIncidents(incRes.data);
-      if (envRes.success) setEnvironmental(envRes.data);
-      if (prodRes.success) setProduction(prodRes.data);
-      if (contRes.success) setContractors(contRes.data);
-      if (altRes.success) setAlerts(altRes.data);
-      if (notifRes.success) setNotifications(notifRes.data);
-      if (grvRes.success) setGrievances(grvRes.data);
-      if (docRes.success) setDocuments(docRes.data);
-      if (fldRes.success) setFieldReports(fldRes.data);
-      if (audRes.success) setAuditLogs(audRes.data);
+      if (dashRes?.success && dashRes.data) setMetrics(dashRes.data);
+      if (minesRes?.success && Array.isArray(minesRes.data)) setMines(minesRes.data);
+      if (compRes?.success && Array.isArray(compRes.data)) setCompliance(compRes.data);
+      if (inspRes?.success && Array.isArray(inspRes.data)) setInspections(inspRes.data);
+      if (caRes?.success && Array.isArray(caRes.data)) setCorrectiveActions(caRes.data);
+      if (incRes?.success && Array.isArray(incRes.data)) setIncidents(incRes.data);
+      if (envRes?.success && Array.isArray(envRes.data)) setEnvironmental(envRes.data);
+      if (prodRes?.success && Array.isArray(prodRes.data)) setProduction(prodRes.data);
+      if (contRes?.success && Array.isArray(contRes.data)) setContractors(contRes.data);
+      if (altRes?.success && Array.isArray(altRes.data)) setAlerts(altRes.data);
+      if (notifRes?.success && Array.isArray(notifRes.data)) setNotifications(notifRes.data);
+      if (grvRes?.success && Array.isArray(grvRes.data)) setGrievances(grvRes.data);
+      if (docRes?.success && Array.isArray(docRes.data)) setDocuments(docRes.data);
+      if (fldRes?.success && Array.isArray(fldRes.data)) setFieldReports(fldRes.data);
+      if (audRes?.success && Array.isArray(audRes.data)) setAuditLogs(audRes.data);
     } catch (err: any) {
-      console.error('Failed to load application data:', err);
-      showToast('error', 'Network Notice', 'Unable to sync latest records from server. Using local cache.');
+      console.warn('Network sync notice:', err);
     } finally {
       setLoading(false);
     }
@@ -305,9 +403,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const resetDemoData = async () => {
     try {
-      const res = await fetch('/api/demo/reset', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
+      const res = await safeFetchJson('/api/demo/reset', { method: 'POST' });
+      if (res?.success) {
         showToast('success', 'Demo Reset Complete', 'Database restored to initial baseline demonstration records.');
         await refreshData();
       }

@@ -396,62 +396,178 @@ export interface GrievanceRecord {
   resolutionNotes?: string;
 }
 
+export interface DemoUserAccount {
+  id: string;
+  name: string;
+  email: string;
+  demoEmail: string;
+  password?: string;
+  role: UserRole;
+  roleTitle: string;
+  department: string;
+  mineId?: string;
+  mineName?: string;
+  description: string;
+  permissions: string[];
+}
+
 export const PREDEFINED_USERS = [
   {
     id: 'usr_admin_01',
     name: 'Dr. Rajeshwar Sharma',
-    email: 'admin.gov@smartmine.gov.in',
+    email: 'admin@smartmine.demo',
+    demoEmail: 'admin@smartmine.demo',
+    password: 'Admin#2026',
     role: 'admin' as UserRole,
-    roleTitle: 'Chief Technical Director & System Admin',
+    roleTitle: 'System Administrator',
     department: 'Ministry of Coal / IT & Digital Governance Cell',
-    permissions: ['System Admin', 'National Oversight', 'Audit All', 'Configure Alerts']
+    description: 'System health, user RBAC, audit log verification & enterprise settings',
+    permissions: ['System Admin', 'National Oversight', 'Audit All', 'Configure Alerts', 'Manage Users']
   },
   {
     id: 'usr_mine_01',
     name: 'Er. Arvind Mukhopadhyay',
-    email: 'mine.official@smartmine.gov.in',
+    email: 'mine.official@smartmine.demo',
+    demoEmail: 'mine.official@smartmine.demo',
+    password: 'Mine#2026',
     role: 'mine_official' as UserRole,
-    roleTitle: 'General Manager (Mining & Operations)',
+    roleTitle: 'Mine Official (General Manager)',
     department: 'Bharat Coal Mine Alpha / BCCL Area IX',
-    permissions: ['Pit Operations', 'Daily Shift Log', 'File Incidents', 'Manage CAPA']
+    mineId: 'mine_alpha',
+    mineName: 'Bharat Coal Mine Alpha',
+    description: 'Operational oversight, mine compliance %, safety incidents & daily production',
+    permissions: ['Pit Operations', 'Daily Shift Log', 'File Incidents', 'Manage CAPA', 'Mine Reports']
   },
   {
     id: 'usr_insp_01',
     name: 'Smt. Priya Sundaram',
-    email: 'inspector.dgms@smartmine.gov.in',
+    email: 'inspector@smartmine.demo',
+    demoEmail: 'inspector@smartmine.demo',
+    password: 'DGMS#2026',
     role: 'inspector' as UserRole,
-    roleTitle: 'Senior Dy. Director of Mines Safety',
+    roleTitle: 'Field Officer / Inspector',
     department: 'Directorate General of Mines Safety (DGMS), Eastern Zone',
-    permissions: ['Statutory Inspections', 'Issue Section 22 Orders', 'DGMS Form VI Clearance']
+    description: 'Statutory DGMS safety audits, Section 22 notices, violations & field verification',
+    permissions: ['Statutory Inspections', 'Issue Section 22 Orders', 'DGMS Form VI Clearance', 'Verify CAPA']
   },
   {
     id: 'usr_corp_01',
     name: 'Shri Vikramaditya Das',
-    email: 'corporate.exec@smartmine.gov.in',
+    email: 'corporate@smartmine.demo',
+    demoEmail: 'corporate@smartmine.demo',
+    password: 'CIL#2026',
     role: 'corporate' as UserRole,
-    roleTitle: 'Executive Director (Safety & Production Monitoring)',
+    roleTitle: 'Corporate Management',
     department: 'Coal India Limited Corporate HQ, Kolkata',
-    permissions: ['Subsidiary Review', 'Production Allocations', 'Tier-2 Escalations']
+    description: 'Multi-mine aggregate compliance, subsidiary benchmarking, production vs target',
+    permissions: ['Subsidiary Review', 'Production Allocations', 'Multi-Mine Analytics', 'Risk Intelligence']
   },
   {
     id: 'usr_reg_01',
     name: 'Dr. Anurag Sengupta',
-    email: 'regulatory.cpcb@smartmine.gov.in',
+    email: 'regulator@smartmine.demo',
+    demoEmail: 'regulator@smartmine.demo',
+    password: 'CPCB#2026',
     role: 'regulatory' as UserRole,
-    roleTitle: 'Zonal Joint Secretary / Compliance Auditor',
+    roleTitle: 'Regulatory Authority',
     department: 'Central Pollution Control Board & CCO Regional Directorate',
-    permissions: ['Environmental Audits', 'Effluent Verification', 'MoEFCC Clearances']
+    description: 'Statutory compliance audits, overdue regulatory requirements & environmental clearances',
+    permissions: ['Environmental Audits', 'Effluent Verification', 'MoEFCC Clearances', 'Regulatory Reports']
   },
   {
     id: 'usr_cont_01',
     name: 'K. S. Narayanan',
-    email: 'contractor.rep@smartmine.gov.in',
+    email: 'contractor@smartmine.demo',
+    demoEmail: 'contractor@smartmine.demo',
+    password: 'Contract#2026',
     role: 'contractor' as UserRole,
-    roleTitle: 'Lead Contractor Project Engineer',
+    roleTitle: 'Contractor Representative',
     department: 'Apex Earthmovers & Heavy Haulage Pvt. Ltd.',
-    permissions: ['Vendor Clearance', 'Machinery Safety Records', 'Vocational Training']
+    mineId: 'mine_eastern',
+    mineName: 'Eastern Valley Open Cast',
+    description: 'Machinery safety compliance, heavy haulage inspections & vendor workforce records',
+    permissions: ['Vendor Clearance', 'Machinery Safety Records', 'Vocational Training', 'Contractor CAPA']
   }
 ];
+
+export const DEMO_ACCOUNTS = PREDEFINED_USERS;
+
+export const ROLE_ALLOWED_TABS: Record<UserRole, string[]> = {
+  admin: [
+    'dashboard',
+    'users-roles',
+    'audit-trail',
+    'system-settings',
+    'settings'
+  ],
+  mine_official: [
+    'dashboard',
+    'production',
+    'compliance',
+    'inspections',
+    'corrective-actions',
+    'safety',
+    'environmental',
+    'contractors',
+    'field-reports',
+    'field-report',
+    'gis-map',
+    'reports',
+    'alerts',
+    'grievances',
+    'ai-assistant'
+  ],
+  inspector: [
+    'dashboard',
+    'inspections',
+    'field-reports',
+    'field-report',
+    'safety',
+    'corrective-actions',
+    'gis-map',
+    'documents',
+    'alerts',
+    'ai-assistant'
+  ],
+  corporate: [
+    'dashboard',
+    'reports',
+    'compliance',
+    'ai-risk',
+    'ai-risk-center',
+    'safety',
+    'environmental',
+    'production',
+    'gis-map',
+    'anomalies',
+    'anomaly-detection',
+    'ai-assistant'
+  ],
+  regulatory: [
+    'dashboard',
+    'compliance',
+    'inspections',
+    'safety',
+    'environmental',
+    'alerts',
+    'corrective-actions',
+    'reports',
+    'documents',
+    'gis-map',
+    'ai-assistant'
+  ],
+  contractor: [
+    'dashboard',
+    'contractors',
+    'inspections',
+    'safety',
+    'corrective-actions',
+    'documents',
+    'alerts',
+    'field-reports',
+    'field-report'
+  ]
+};
 
 export interface DashboardMetrics {
   totalMines: number;

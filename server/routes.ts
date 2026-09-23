@@ -6,9 +6,127 @@ import {
   detectOperationalAnomalies,
   extractDocumentMetadataWithGemini
 } from './geminiService';
-import { ComplianceRequirement, CorrectiveAction, Inspection, SafetyIncident, FieldReport } from '../src/types';
+import {
+  ComplianceRequirement,
+  CorrectiveAction,
+  Inspection,
+  SafetyIncident,
+  FieldReport,
+  PREDEFINED_USERS,
+  DEMO_ACCOUNTS,
+  UserRole
+} from '../src/types';
 
 export const apiRouter = express.Router();
+
+/**
+ * RBAC Helper & Authorization Middleware
+ * Extracts the user's role and identity from headers or query parameters
+ */
+export const getUserAuth = (req: express.Request) => {
+  const role = (req.headers['x-user-role'] as string) || (req.query.role as string) || 'admin';
+  const userId = (req.headers['x-user-id'] as string) || (req.query.userId as string) || 'usr_admin_01';
+  const mineId = (req.headers['x-user-mine-id'] as string) || (req.query.mineId as string) || '';
+  return { role: role as UserRole, userId, mineId };
+};
+
+export const requireRoleAccess = (allowedRoles: string[]) => {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const { role } = getUserAuth(req);
+    // System Administrator has universal access to all endpoints
+    if (role === 'admin' || allowedRoles.includes(role)) {
+      return next();
+    }
+    return res.status(403).json({
+      success: false,
+      error: 'Forbidden',
+      message: `Access Denied: Role '${role}' is not authorized to access endpoint '${req.originalUrl}'. Required role(s): [${allowedRoles.join(', ')}].`,
+      errorCode: 'FORBIDDEN_ROLE_ACCESS'
+    });
+  };
+};
+
+// ==========================================
+// Authentication & Session Endpoints
+// ==========================================
+
+apiRouter.post('/auth/login', (req, res) => {
+  try {
+    const { email, password, role } = req.body;
+
+    // Quick demo role switcher login
+    if (role) {
+      const matchedByRole = PREDEFINED_USERS.find(u => u.role === role);
+      if (matchedByRole) {
+        store.addAuditLog({
+          user: matchedByRole.name,
+          role: matchedByRole.roleTitle,
+          action: 'USER_LOGIN',
+          module: 'Authentication',
+          recordId: matchedByRole.id,
+          details: `Role-based quick switch login as ${matchedByRole.roleTitle} (${matchedByRole.name})`
+        });
+
+        return res.json({
+          success: true,
+          user: matchedByRole,
+          token: `smartmine_jwt_token_${matchedByRole.id}`
+        });
+      }
+    }
+
+    // Standard credential validation
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide both User ID / Email and password.'
+      });
+    }
+
+    const user = PREDEFINED_USERS.find(
+      u => u.email.toLowerCase() === email.toLowerCase().trim()
+    );
+
+    if (!user || user.password !== password) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid User ID / Email or Password. Please check demo accounts below or use quick login.'
+      });
+    }
+
+    store.addAuditLog({
+      user: user.name,
+      role: user.roleTitle,
+      action: 'USER_LOGIN',
+      module: 'Authentication',
+      recordId: user.id,
+      details: `Successful sign-in by ${user.name} (${user.email})`
+    });
+
+    res.json({
+      success: true,
+      user,
+      token: `smartmine_jwt_token_${user.id}`
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+apiRouter.get('/auth/demo-accounts', (req, res) => {
+  res.json({ success: true, data: DEMO_ACCOUNTS });
+});
+
+apiRouter.get('/auth/me', (req, res) => {
+  const { userId, role } = getUserAuth(req);
+  const user = PREDEFINED_USERS.find(u => u.id === userId || u.role === role) || PREDEFINED_USERS[0];
+  res.json({ success: true, user });
+});
+
+// Users Management (Admin Only)
+apiRouter.get('/users', requireRoleAccess(['admin']), (req, res) => {
+  res.json({ success: true, data: PREDEFINED_USERS });
+});
 
 // Dashboard Overview
 apiRouter.get('/dashboard', (req, res) => {
@@ -465,11 +583,11 @@ apiRouter.post('/environmental', (req, res) => {
 });
 
 // Production Reports
-apiRouter.get('/production', (req, res) => {
+apiRouter.get('/production', requireRoleAccess(['admin', 'mine_official', 'corporate']), (req, res) => {
   res.json({ success: true, data: store.productionReports });
 });
 
-apiRouter.post('/production', (req, res) => {
+apiRouter.post('/production', requireRoleAccess(['admin', 'mine_official']), (req, res) => {
   try {
     const body = req.body;
     const mine = store.mines.find(m => m.id === body.mineId) || store.mines[0];
@@ -525,11 +643,11 @@ apiRouter.post('/production', (req, res) => {
 });
 
 // Contractors
-apiRouter.get('/contractors', (req, res) => {
+apiRouter.get('/contractors', requireRoleAccess(['admin', 'mine_official', 'contractor']), (req, res) => {
   res.json({ success: true, data: store.contractors });
 });
 
-apiRouter.post('/contractors', (req, res) => {
+apiRouter.post('/contractors', requireRoleAccess(['admin', 'mine_official']), (req, res) => {
   try {
     const body = req.body;
     const mine = store.mines.find(m => m.id === body.mineId) || store.mines[0];
@@ -571,11 +689,11 @@ apiRouter.post('/contractors', (req, res) => {
 });
 
 // Field Reports
-apiRouter.get('/field-reports', (req, res) => {
+apiRouter.get('/field-reports', requireRoleAccess(['admin', 'mine_official', 'inspector']), (req, res) => {
   res.json({ success: true, data: store.fieldReports });
 });
 
-apiRouter.post('/field-reports', (req, res) => {
+apiRouter.post('/field-reports', requireRoleAccess(['admin', 'mine_official', 'inspector']), (req, res) => {
   try {
     const body = req.body;
     const mine = store.mines.find(m => m.id === body.mineId) || store.mines[0];
@@ -765,8 +883,8 @@ apiRouter.post('/documents', async (req, res) => {
   }
 });
 
-// Audit Logs
-apiRouter.get('/audit-logs', (req, res) => {
+// Audit Logs (System Administrator Only)
+apiRouter.get('/audit-logs', requireRoleAccess(['admin']), (req, res) => {
   res.json({ success: true, data: store.auditLogs });
 });
 
@@ -780,7 +898,7 @@ apiRouter.get('/ai/risk-assessment', async (req, res) => {
   }
 });
 
-apiRouter.get('/ai/anomalies', (req, res) => {
+apiRouter.get('/ai/anomalies', requireRoleAccess(['admin', 'mine_official', 'corporate']), (req, res) => {
   try {
     const anomalies = detectOperationalAnomalies();
     res.json({ success: true, data: anomalies });
@@ -888,8 +1006,8 @@ apiRouter.post('/reports/generate', (req, res) => {
   }
 });
 
-// Reset Demo Data
-apiRouter.post('/demo/reset', (req, res) => {
+// Reset Demo Data (Admin Only)
+apiRouter.post('/demo/reset', requireRoleAccess(['admin']), (req, res) => {
   store.reset();
   store.addAuditLog({
     user: 'Authorized Judge / System Admin',
